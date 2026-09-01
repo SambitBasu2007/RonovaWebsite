@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freebuff Desktop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a0505;
+            min-height: 100vh;
+            font-family: "Courier New", monospace;
+            overflow: hidden;
+        }
+
+        #nameScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        #nameScreen.fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        .name-box {
+            background: #fff;
+            padding: 40px 50px;
+            width: min(90vw, 480px);
+            border: 3px solid #000;
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 1s ease forwards;
+        }
+
+        .name-box label {
+            display: block;
+            font-size: 16px;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .name-box input[type=text] {
+            width: 100%;
+            padding: 14px 18px;
+            font-family: "Courier New", monospace;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #000;
+            background: #f5f5f5;
+            color: #000;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .name-box input[type=text]:focus {
+            border-color: #000;
+            background: #fff;
+        }
+
+        .name-box input[type=text]::placeholder {
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .name-box button {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 2px solid #000;
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .name-box button:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 200;
+            background: #1a0505;
+        }
+
+        #loadingScreen.show {
+            display: flex;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: min(80vw, 360px);
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #fff;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-label {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        #mainContent {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 50;
+        }
+
+        #mainContent.show {
+            display: flex;
+        }
+
+        .greeting-box {
+            background: #fff;
+            padding: 18px 40px;
+            margin: 20px auto 0;
+            border: 3px solid #000;
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 60;
+            position: relative;
+        }
+
+        .greeting-text {
+            
+            font-size: 16px;
+            line-height: 1.6;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        #viewerContainer {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #viewerContainer canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #animControls {
+            position: absolute;
+            top: 70px;
+            right: 15px;
+            z-index: 70;
+            display: none;
+        }
+
+        #animControls.show {
+            display: block;
+        }
+
+        #animControls button {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 14px;
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        #animControls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .footer-hint {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 6px;
+            z-index: 70;
+        }
+
+        .footer-hint.show {
+            display: flex;
+        }
+
+        .footer-hint span {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-hint .arrow {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="nameScreen">
+        <div class="name-box">
+            <label for="nameInput">Enter Your Name</label>
+            <input type="text" id="nameInput" placeholder="Type here..." autocomplete="off" autofocus />
+            <button id="submitBtn">GO</button>
+        </div>
+    </div>
+    <div id="loadingScreen">
+        <div class="loading-text" id="loadingText">Loading</div>
+        <div class="progress-container">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-label" id="progressLabel">Preparing...</div>
+        </div>
+    </div>
+    <div id="mainContent">
+        <div class="greeting-box">
+            <p class="greeting-text" id="greetingText">HI</p>
+        </div>
+        <div id="viewerContainer"></div>
+        <div id="animControls"><button id="playPauseBtn">Pause</button></div>
+        <div class="footer-hint" id="footerHint"><span class="arrow">&#x21BB;</span><span>rotate model</span></div>
+    </div>
+    <script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        var nameScreen = document.getElementById('nameScreen');
+        var loadingScreen = document.getElementById('loadingScreen');
+        var loadingText = document.getElementById('loadingText');
+        var progressFill = document.getElementById('progressFill');
+        var progressLabel = document.getElementById('progressLabel');
+        var mainContent = document.getElementById('mainContent');
+        var greetingText = document.getElementById('greetingText');
+        var footerHint = document.getElementById('footerHint');
+        var viewerContainer = document.getElementById('viewerContainer');
+        var animControls = document.getElementById('animControls');
+        var playPauseBtn = document.getElementById('playPauseBtn');
+        var nameInput = document.getElementById('nameInput');
+        var submitBtn = document.getElementById('submitBtn');
+
+        var ASSETS = [
+            { name: 'Ronova (FBX)', path: 'assets/Ronova/Ronova.fbx', type: 'fbx' },
+        ];
+
+        var scene, camera, renderer, controls;
+        var mixer = null;
+        var currentAction = null;
+        var isPlaying = true;
+        var clock = new THREE.Clock();
+
+        function updateProgress(current, total, assetName) {
+            var pct = Math.round((current / total) * 100);
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = 'Loading ' + assetName + ' (' + current + '/' + total + ')';
+        }
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a0505);
+            camera = new THREE.PerspectiveCamera(45, viewerContainer.clientWidth / viewerContainer.clientHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            viewerContainer.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 1, 0);
+            controls.enableDamping = true;
+            controls.rotateSpeed = 0.3;
+            controls.dampingFactor = 0.08;
+            controls.enablePan = false;
+            controls.minDistance = 0.1;
+            controls.maxDistance = 15;
+            controls.maxPolarAngle = Math.PI * 0.85;
+            controls.update();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            var dl = new THREE.DirectionalLight(0xffffff, 1.0);
+            dl.position.set(5, 10, 5);
+            dl.castShadow = true;
+            dl.shadow.mapSize.width = 2048;
+            dl.shadow.mapSize.height = 2048;
+            scene.add(dl);
+            var fl2 = new THREE.DirectionalLight(0x8888ff, 0.3);
+            fl2.position.set(-5, 5, -5);
+            scene.add(fl2);
+            var rl = new THREE.DirectionalLight(0xffffff, 0.2);
+            rl.position.set(0, 3, -5);
+            scene.add(rl);
+
+            var ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(50, 50),
+                new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            window.addEventListener('resize', function () {
+                if (!camera || !renderer) return;
+                camera.aspect = viewerContainer.clientWidth / viewerContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
+            });
+        }
+
+        function fixMaterials(obj) {
+            obj.traverse(function (child) {
+                if (!child.isMesh) return;
+                console.log('Mesh: "' + child.name + '"');
+                if (child.material) {
+                    var mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(function (m) {
+                        m.transparent = false;
+                        m.opacity = 1.0;
+                        m.depthWrite = true;
+                        m.side = THREE.FrontSide;
+                    });
+                } else {
+                    child.material = new THREE.MeshStandardMaterial({ color: 0xff00ff });
+                }
+                if (child.geometry) child.geometry.computeVertexNormals();
+                child.castShadow = true;
+                child.receiveShadow = true;
+                console.log('  Texture: ' + (child.material.map ? 'yes' : 'no'));
+            });
+        }
+
+
+        function fitCamera(obj) {
+            try {
+                var box = new THREE.Box3().setFromObject(obj);
+                var size = box.getSize(new THREE.Vector3());
+                var center = box.getCenter(new THREE.Vector3());
+                var maxDim = Math.max(size.x, size.y, size.z);
+                if (maxDim === 0) return;
+                var fov = camera.fov * (Math.PI / 180);
+                var dist = (maxDim / 2) / Math.tan(fov / 2) * 1.6;
+                controls.target.copy(center);
+                camera.position.set(center.x, center.y + size.y * 0.2, center.z + dist);
+                controls.update();
+                console.log('Camera fitted. Model size: ' + maxDim.toFixed(2) + ', distance: ' + dist.toFixed(2));
+            } catch (e) {
+                console.log('fitCamera error: ' + e.message);
+            }
+        }
+
+        function setupAnimation(obj, clips) {
+            if (!clips || clips.length === 0) {
+                console.log('No animations - displaying statically');
+                return;
+            }
+            console.log(clips.length + ' animation(s) found');
+            mixer = new THREE.AnimationMixer(obj);
+            currentAction = mixer.clipAction(clips[0]);
+            currentAction.play();
+            animControls.classList.add('show');
+        }
+
+        playPauseBtn.addEventListener('click', function () {
+            if (!currentAction) return;
+            isPlaying = !isPlaying;
+            if (isPlaying) { currentAction.play(); playPauseBtn.textContent = 'Pause'; }
+            else { currentAction.stop(); playPauseBtn.textContent = 'Play'; }
+        });
+
+        function loadAsset(asset) {
+            return new Promise(function (resolve, reject) {
+                if (asset.type === 'fbx') {
+                    new FBXLoader().load(asset.path, resolve, undefined, reject);
+                } else {
+                    new GLTFLoader().load(asset.path, function (gltf) { resolve(gltf.scene); }, undefined, reject);
+                }
+            });
+        }
+
+        async function loadAllAssets() {
+            var total = ASSETS.length;
+            var loaded = 0;
+            var displayModel = null;
+
+            for (var i = 0; i < total; i++) {
+                var asset = ASSETS[i];
+                updateProgress(loaded, total, asset.name);
+                try {
+                    console.log('Loading: ' + asset.path);
+                    var obj = await loadAsset(asset);
+                    loaded++;
+                    updateProgress(loaded, total, asset.name);
+                    console.log('Loaded: ' + asset.name);
+
+                    if (!displayModel) {
+                        // Scale removed - model is naturally correct size
+                        fixMaterials(obj);
+                        scene.add(obj);
+                        fitCamera(obj);
+                        setupAnimation(obj, obj.animations || []);
+                        displayModel = obj;
+                    }
+                } catch (e) {
+                    console.log('Failed: ' + asset.name + ' - ' + e.message);
+                    loaded++;
+                    updateProgress(loaded, total, asset.name);
+                }
+            }
+
+            if (!displayModel) {
+                console.error('No models loaded!');
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            var delta = clock.getDelta();
+            if (mixer && isPlaying) mixer.update(delta);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        async function handleSubmit() {
+            var name = nameInput.value.trim();
+            if (!name) {
+                nameInput.focus();
+                nameInput.style.borderColor = '#ff0000';
+                setTimeout(function () { nameInput.style.borderColor = '#000000'; }, 1000);
+                return;
+            }
+
+            nameScreen.classList.add('fade-out');
+            await new Promise(function (r) { setTimeout(r, 600); });
+            nameScreen.style.display = 'none';
+            loadingScreen.classList.add('show');
+            progressLabel.textContent = 'Preparing...';
+            progressFill.style.width = '0%';
+
+            try {
+                initThreeJS();
+                animate();
+                await loadAllAssets();
+            } catch (err) {
+                console.error('Error:', err);
+            }
+
+            loadingText.textContent = 'Loading complete';
+            progressFill.style.width = '100%';
+            progressLabel.textContent = 'Ready';
+            await new Promise(function (r) { setTimeout(r, 500); });
+
+            loadingScreen.classList.remove('show');
+            greetingText.textContent = 'HI, ' + name.toUpperCase();
+            mainContent.classList.add('show');
+            footerHint.classList.add('show');
+            onResize();
+        }
+
+        function onResize() {
+            if (camera && renderer) {
+                camera.aspect = viewerContainer.clientWidth / viewerContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
+            }
+        }
+
+        submitBtn.addEventListener('click', handleSubmit);
+        nameInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') handleSubmit();
+        });
+    </script>
+</body>
+
+</html>
